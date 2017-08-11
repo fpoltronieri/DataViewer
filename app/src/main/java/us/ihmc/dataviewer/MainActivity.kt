@@ -39,9 +39,9 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
                     activity,
                     arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE),
                     WESPermission)
-            Log.d(TAGDEBUG, "Permission granted")
+            Log.d(TAGDEBUG, "Requesting permission")
         } else {
-            Log.d(TAGDEBUG, "No permission granted, requesting it to the user")
+            Log.d(TAGDEBUG, "The app has already the permissions")
         }
     }
 
