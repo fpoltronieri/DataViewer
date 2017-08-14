@@ -36,11 +36,11 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
 
     lateinit var gestureDetector: GestureDetectorCompat
     lateinit var zoomView: PhotoView
-    lateinit var getmoreButton : Button
+    lateinit var getmoreButton: Button
     lateinit var appBundle: Bundle
 
     var uriImage: Uri? = null
-    var carUriImage : Uri? = null
+    var camUriImage: Uri? = null
 
     private var mDiscoveredChunks = ConcurrentHashMap<String?, Intent?>()
     /**
@@ -71,7 +71,7 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
                     Log.d(TAGDEBUG, "Permission granted")
                 } else {
                     Log.d(TAGDEBUG, "Permission not granted closing the application")
-                    System.exit(-1);
+                    System.exit(-1)
                 }
             }
         }
@@ -100,13 +100,13 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
         //get more button
         getmoreButton = findViewById(R.id.button_getmore) as Button
         getmoreButton.setOnClickListener(
-                { v -> Toast.makeText(this, "Not implemented yet", Toast.LENGTH_SHORT).show() }
+                { _ -> Toast.makeText(this, "Not implemented yet", Toast.LENGTH_SHORT).show() }
         )
 
         //select button
         val selectButton = findViewById(R.id.button_select) as Button
         selectButton.setOnClickListener({
-            v ->
+            _ ->
             val intent = Intent(this, SelectActivity::class.java)
             intent.putExtra("uri", uriImage)
             startActivity(intent)
@@ -165,16 +165,25 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         Log.d(TAGDEBUG, "onActivityResult called!")
         super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == 1) {
-            if (data == null) {
-                Toast.makeText(this, "Error, something went wrong", Toast.LENGTH_SHORT).show()
-                return
+        when (requestCode) {
+            1 -> {
+                if (data == null) {
+                    Toast.makeText(this, "Error, something went wrong", Toast.LENGTH_SHORT).show()
+                    return
+                }
+                Log.d(TAGDEBUG, "Picture selected: " + data.data.path)
+                Toast.makeText(this, "Picture selected " + data.data.path, Toast.LENGTH_SHORT).show()
+                uriImage = data.data
+                Log.d(TAGDEBUG, "Uri set for the last image " + uriImage)
+                zoomView.setImageURI(uriImage)
             }
-            Log.d(TAGDEBUG, "Picture selected: " + data.data.path)
-            Toast.makeText(this, "Picture selected " + data.data.path, Toast.LENGTH_SHORT).show()
-            uriImage = data.data
-            Log.d(TAGDEBUG, "Uri set for the last image " + uriImage)
-            zoomView.setImageURI(uriImage)
+            TAKE_PICTURE -> {
+                if (resultCode == Activity.RESULT_OK) {
+                    sendAddMessege(camUriImage?.path, "image/jpg")
+                    Log.d(TAGDEBUG, "ActivityResult OK, send report to DSPro:  $camUriImage?.path")
+                    onBackPressed()
+                }
+            }
         }
     }
 
@@ -219,9 +228,15 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
 
     private fun updateChunkCount(intent: Intent?) {
 
-        val hasMoreChunks = intent.getBooleanExtra(Key.HAS_MORE_CHUNKS.toString(), false)
-        val chunkCount = intent.getStringExtra(Key.CHUNK_COUNT.toString())
+        val hasMoreChunks = intent?.getBooleanExtra(Key.HAS_MORE_CHUNKS.toString(), false)
+        val chunkCount = intent?.getStringExtra(Key.CHUNK_COUNT.toString())
         Log.d(TAGDEBUG, "hasMoreChunks: $hasMoreChunks chunckCount: $chunkCount")
+        if (hasMoreChunks?:false) {
+            getmoreButton.isEnabled = false
+        }
+        if (!chunkCount.equals("")) {
+            getmoreButton.text = getString(R.string.action_get_more_chunks) + " " + chunkCount
+        }
         //Update the counter on the button
         /*
         if (hasMoreChunks) {
@@ -243,11 +258,26 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
     private fun takePhoto() {
         val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
         val filename = SimpleDateFormat("yyyyMMddHHmm", Locale.US).format(Date())
-        val photo = File(StoreTask.getStorageDirectory(), "$filename.jpg" )
+        val photo = File(StoreTask.getStorageDirectory(), "$filename.jpg")
         intent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(photo))
-        carUriImage = Uri.fromFile(photo)
+        camUriImage = Uri.fromFile(photo)
         startActivityForResult(intent, TAKE_PICTURE)
     }
+
+    /**
+     * ADD a Message using DSPro
+     */
+    private fun sendAddMessege(filename : String?, mimeType: String?) {
+        val intent = Intent()
+        intent.setAction(Action.ADD_MESSAGE.toString())
+        val bundle = Bundle()
+        bundle.putString(Key.NAME.toString(), filename)
+        bundle.putString(Key.MIME_TYPE.toString(), mimeType)
+        intent.putExtras(bundle)
+        Log.d(TAGDEBUG, "Sending ${Action.ADD_MESSAGE.toString()} in broadcast with mime type: $mimeType filenameL $filename")
+        applicationContext.sendBroadcast(intent)
+    }
+
 
     /**
      * Request a GET_DATA to the DSProProxy
@@ -287,61 +317,57 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
     /**
      * Set a BroadcastReceiver for the application
      */
-    private fun broadcastReceiver(init: (Context, Intent?) -> Unit): BroadcastReceiver {
-        return object : BroadcastReceiver() {
-            public override fun onReceive(context: Context, intent: Intent?) {
-                val action = Action.fromString(intent?.action)
-                Log.d(TAGDEBUG, "Received an intent: " + intent + " with Action: " + action)
-                when (action) {
-                    Action.DATA_ARRIVED -> {
-                        val uri = intent?.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)
-                        val mimeType = intent?.getStringExtra(Key.MIME_TYPE.toString())
-                        val fileName = intent?.getStringExtra(Key.MESSAGE_ID.toString())
-                        var messageId = intent?.getStringExtra(Key.MESSAGE_ID.toString())
-                        Log.d(TAGDEBUG, "Received URI: " + uri + " with mimeType: " + mimeType)
-                        if (MIMEUtils.isImage(mimeType)) {
-                            //checking if they are null to avoid to throw NPE
-                            //if the data is for a different image return
-                            if ((uri?.path?.equals(uriImage?.path)) ?: false) return
-                            uriImage = uri
-                            val isgetData = intent?.getBooleanExtra(Key.IS_A_GET_DATA.toString(), false)
-                            if (isgetData ?: true) {
-                                Log.d(TAGDEBUG, "Received return from GET_DATA, settting the image")
-                                zoomView.setImageURI(uriImage)
-                            } else {
-                                //data arrived
-                                Log.d(TAGDEBUG, "Received callback DATA_ARRIVED, sending GET_DATA request")
-                                updateChunkCount(intent)
-                                mDiscoveredChunks.put(fileName, intent)
-                                sendGetData(fileName, messageId, mimeType)
-                                return
-                            }
-                        } else if (MIMEUtils.isPresentation(mimeType)) {
-                            val isgetData = intent?.getBooleanExtra(Key.IS_A_GET_DATA.toString(), false)
-                            if (isgetData ?: true) {
-                                Log.d(TAGDEBUG, "Received actual return from GET_DATA, presentation data")
-                            } else {
-                                Log.d(TAGDEBUG, "Received callback DATA_ARRIVED, sending GET_DATA request");
-                                updateChunkCount(intent)
-                                mDiscoveredChunks.put(fileName, intent)
-                                sendGetData(fileName, messageId, mimeType)
-                            }
-                            getmoreButton.setOnClickListener(
-                                    {_ ->
-                                        Log.d(TAGDEBUG, "Trying to open the document $fileName mimeType $mimeType")
-                                        sendOpenDocumentWith(fileName, mimeType)
-                                     }
-                            )
+    val broadcastReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent?) {
+            val action = Action.fromString(intent?.action)
+            Log.d(TAGDEBUG, "Received an intent: " + intent + " with Action: " + action)
+            when (action) {
+                Action.DATA_ARRIVED -> {
+                    val uri = intent?.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)
+                    val mimeType = intent?.getStringExtra(Key.MIME_TYPE.toString())
+                    val fileName = intent?.getStringExtra(Key.MESSAGE_ID.toString())
+                    var messageId = intent?.getStringExtra(Key.MESSAGE_ID.toString())
+                    Log.d(TAGDEBUG, "Received URI: " + uri + " with mimeType: " + mimeType)
+                    if (MIMEUtils.isImage(mimeType)) {
+                        //if the data is for a different image return
+                        if ((uri?.path?.equals(uriImage?.path)) ?: false) return
+                        uriImage = uri
+                        val isgetData = intent?.getBooleanExtra(Key.IS_A_GET_DATA.toString(), false)
+                        if (isgetData ?: true) {
+                            Log.d(TAGDEBUG, "Received return from GET_DATA, settting the image")
+                            zoomView.setImageURI(uriImage)
+                        } else {
+                            Log.d(TAGDEBUG, "Received callback DATA_ARRIVED, sending GET_DATA request")
+                            updateChunkCount(intent)
+                            mDiscoveredChunks.put(fileName, intent)
+                            sendGetData(fileName, messageId, mimeType)
+                            return
                         }
+                    } else if (MIMEUtils.isPresentation(mimeType)) {
+                        val isgetData = intent?.getBooleanExtra(Key.IS_A_GET_DATA.toString(), false)
+                        if (isgetData ?: true) {
+                            Log.d(TAGDEBUG, "Received actual return from GET_DATA, presentation data")
+                        } else {
+                            Log.d(TAGDEBUG, "Received callback DATA_ARRIVED, sending GET_DATA request");
+                            updateChunkCount(intent)
+                            mDiscoveredChunks.put(fileName, intent)
+                            sendGetData(fileName, messageId, mimeType)
+                        }
+                        getmoreButton.setOnClickListener(
+                                { _ ->
+                                    Log.d(TAGDEBUG, "Trying to open the document $fileName mimeType $mimeType")
+                                    sendOpenDocumentWith(fileName, mimeType)
+                                }
+                        )
+                    }
 
-                    }
-                    else -> {
-                        Log.d(TAGDEBUG, "Unrecognized action " + action)
-                    }
                 }
-
-
+                else -> {
+                    Log.d(TAGDEBUG, "Unrecognized action " + action)
+                }
             }
+
+
         }
     }
 

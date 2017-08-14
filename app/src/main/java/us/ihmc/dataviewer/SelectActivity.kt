@@ -4,7 +4,6 @@ import android.net.Uri
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.util.Log
-import android.view.View
 import android.widget.Button
 import android.widget.Toast
 import com.theartofdev.edmodo.cropper.CropImageView
@@ -28,17 +27,25 @@ class SelectActivity : AppCompatActivity() {
         val select_button  = findViewById(R.id.select_area_button) as Button
         select_button.setOnClickListener(
                 {
-                    v -> val points = cropView.cropPoints
-                    Log.d(TAGDEBUG, "Selected points: " )
-                    var pointString = ""
-                    for (p in points) {
-                        Log.d(TAGDEBUG, "" + p)
-                        pointString = pointString + p + " "
-                    }
-                    Toast.makeText(this, "Points: " + pointString, Toast.LENGTH_SHORT).show()
+                    _ -> getCurrentSelection()
                 }
         )
 
+    }
+
+
+    /**
+     * get the Current selection of the Crop
+     */
+    private fun getCurrentSelection()  {
+        val points = cropView.cropPoints
+        Log.d(TAGDEBUG, "Selected points: " )
+        var pointString = ""
+        for (p in points) {
+            Log.d(TAGDEBUG, "" + p)
+            pointString = pointString + p + " "
+        }
+        Toast.makeText(this, "Points: " + pointString, Toast.LENGTH_SHORT).show()
     }
 
 }

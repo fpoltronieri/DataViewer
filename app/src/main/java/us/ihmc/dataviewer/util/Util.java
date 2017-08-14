@@ -43,8 +43,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
 
-import us.ihmc.dsprodataviewer.crop.MonitoredActivity;
-
 /**
  * Collection of utility functions used in this package.
  */
