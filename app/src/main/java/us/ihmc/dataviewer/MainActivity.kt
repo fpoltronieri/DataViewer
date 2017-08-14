@@ -18,11 +18,14 @@ import android.support.v4.view.GestureDetectorCompat
 import android.util.Log
 import android.view.GestureDetector
 import android.view.MotionEvent
+import android.view.View
 import android.widget.Button
+import android.widget.TextView
 import android.widget.Toast
 import com.github.chrisbanes.photoview.PhotoView
 import us.ihmc.dataviewer.util.*
 import java.io.File
+import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
@@ -42,9 +45,11 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
     lateinit var zoomView: PhotoView
     lateinit var getmoreButton: Button
     lateinit var appBundle: Bundle
+    lateinit var metadataView : TextView
 
     var uriImage: Uri? = null
     var camUriImage: Uri? = null
+    var metaDataVisibile : Boolean = false
 
     private var mDiscoveredChunks = ConcurrentHashMap<String?, Intent?>()
     /**
@@ -88,15 +93,11 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
         appBundle = Bundle()
         setContentView(R.layout.activity_main)
         verifyPermission(this)
-        //the application has received an intent to take a picture
-        val action = intent.action.toString()
-        if (Action.ADD_MESSAGE.toString().equals(action)) {
-            Log.d(TAGDEBUG, "Received intent with action: $action")
-            takePhoto()
-        }
         //set the gestureDetectore for the application
         gestureDetector = GestureDetectorCompat(this, this)
         gestureDetector.setOnDoubleTapListener(this)
+        //metadataView
+        metadataView = findViewById(R.id.metadataView) as TextView
         //set the zoomable view
         zoomView = findViewById(R.id.zoomView) as PhotoView
         //override the onDoubleTapListener for the view, onDoubleTap browse the filesystem
@@ -119,6 +120,55 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
             intent.putExtra("uri", uriImage)
             startActivity(intent)
         })
+        //the application has received an intent to take a picture
+        val action = intent.action.toString()
+        val type = intent.type
+        val mimeType = intent.getStringExtra(Key.MIME_TYPE.toString())
+        val filename = intent.getStringExtra(Key.NAME.toString())
+
+         if (Intent.ACTION_SEND.equals(action) && type != null) {
+            //load metadata
+            val metadataUri = intent.getParcelableExtra<Uri>(Intent.EXTRA_TEXT)
+             val strMetadata = Util.readFile(metadataUri.path)
+             //set the metadataView
+            Log.d(TAGDEBUG, "Received type: $type")
+            if (MIMEUtils.isImage(type)) {
+                uriImage = intent.getParcelableExtra(Intent.EXTRA_STREAM)
+                zoomView.setImageURI(uriImage)
+            } else if (MIMEUtils.isPresentation(type)) {
+                uriImage = Util.getUriToDrawable(applicationContext, R.drawable.powerpoint)
+                zoomView.setImageURI(uriImage)
+                //Open Document
+                getmoreButton.setOnClickListener(
+                        {
+                            _ -> Log.d(TAGDEBUG, "Opening document $filename")
+                            sendOpenDocumentWith(filename, mimeType)
+                        }
+                )
+            } else {
+                //load the metadata JSON
+                val jsonUri = intent.getParcelableExtra<Uri>(Intent.EXTRA_SUBJECT)
+                try {
+                    val formattedJSON = Util.formatJSON(Util.readFile(jsonUri.path))
+                    metadataView.text = formattedJSON
+                    metaDataVisibile = true
+                    metadataView.visibility = View.VISIBLE
+                    //set the metadata
+                } catch (e : IOException) {
+                    Log.d(TAGDEBUG, "Unable to read file " + metadataUri.path)
+                }
+            }
+            //update the chunks
+            if (mDiscoveredChunks[filename] != null) {
+                Log.d(TAGDEBUG, "Previously discovered CHUNK, updating chunk count")
+                val intentChunks = mDiscoveredChunks[filename]
+                updateChunkCount(intentChunks)
+            }
+        }
+        if (Action.ADD_MESSAGE.toString().equals(action)) {
+            Log.d(TAGDEBUG, "Received intent with action: $action")
+            takePhoto()
+        }
     }
 
     /**
@@ -163,6 +213,25 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
         }
 
         return true
+    }
+
+
+    /**
+     * Switch the View between METADATA and IMAGE
+     */
+    private fun switchToMetada() {
+        if (metaDataVisibile) {
+            metaDataVisibile = false
+            metadataView.visibility = View.INVISIBLE
+            //also set the uriImage
+            zoomView.setImageURI(uriImage)
+            zoomView.visibility = View.VISIBLE
+        } else {
+            metaDataVisibile = true
+            metadataView.visibility = View.VISIBLE
+            zoomView.visibility = View.INVISIBLE
+        }
+
     }
 
 
@@ -215,6 +284,7 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
         var xVelocity = Math.abs(velocityX)
         if (xVelocity >= SWIPE_MIN_VEL && xDistance >= SWIPE_MIN_DIST) {
             Toast.makeText(applicationContext, "Swipe with distance: $xDistance and velocity $xVelocity", Toast.LENGTH_SHORT).show()
+            switchToMetada()
             return true
         }
         Log.d(TAGDEBUG, "Swipe do not recognized $e1 $e2 $velocityX $velocityY")

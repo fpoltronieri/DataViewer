@@ -3,4 +3,5 @@
     <string name="action_select_area">SELECT</string>
     <string name="action_get_more_chunks">GET MORE</string>
     <string name="title_activity_select">SelectActivity</string>
+    <string name="metadata_default_value">Waiting for data..</string>
 </resources>
