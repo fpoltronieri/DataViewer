@@ -5,6 +5,7 @@ import android.app.Activity
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.net.Uri
@@ -375,10 +376,13 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
     override fun onResume() {
         super.onResume()
         Log.d(TAGDEBUG, "Called onResume()")
+        val dataViewerFilter = IntentFilter()
+        registerReceiver(broadcastReceiver, dataViewerFilter)
     }
 
     override fun onDestroy() {
         super.onDestroy()
         Log.d(TAGDEBUG, "Called function onDestroy")
+        unregisterReceiver(broadcastReceiver)
     }
 }
