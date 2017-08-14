@@ -34,6 +34,9 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
     val WESPermission = 0x11
     val TAGDEBUG: String = "DEBUG"
     val TAKE_PICTURE = 2
+    //constant values for SWIPE
+    val SWIPE_MIN_DIST = 100
+    val SWIPE_MIN_VEL = 100
 
     lateinit var gestureDetector: GestureDetectorCompat
     lateinit var zoomView: PhotoView
@@ -98,6 +101,10 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
         zoomView = findViewById(R.id.zoomView) as PhotoView
         //override the onDoubleTapListener for the view, onDoubleTap browse the filesystem
         zoomView.setOnDoubleTapListener(this)
+        //swipe to show the MetaData
+        zoomView.setOnSingleFlingListener { e1, e2, velocityX, velocityY ->
+            this.onFling(e1, e2, velocityX, velocityY)
+        }
         //get more button
         getmoreButton = findViewById(R.id.button_getmore) as Button
         getmoreButton.setOnClickListener(
@@ -203,8 +210,14 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
         return false
     }
 
-    override fun onFling(e1: MotionEvent?, e2: MotionEvent?, velocityX: Float, velocityY: Float): Boolean {
-        Log.d(TAGDEBUG, "action currently not implemented " + e1.toString())
+    override fun onFling(e1: MotionEvent, e2: MotionEvent, velocityX: Float, velocityY: Float): Boolean {
+        var xDistance : Float = Math.abs(e1.x - e2.x)
+        var xVelocity = Math.abs(velocityX)
+        if (xVelocity >= SWIPE_MIN_VEL && xDistance >= SWIPE_MIN_DIST) {
+            Toast.makeText(applicationContext, "Swipe with distance: $xDistance and velocity $xVelocity", Toast.LENGTH_SHORT).show()
+            return true
+        }
+        Log.d(TAGDEBUG, "Swipe do not recognized $e1 $e2 $velocityX $velocityY")
         return false
     }
 
