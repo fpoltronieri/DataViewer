@@ -288,19 +288,25 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
     }
 
     override fun onFling(e1: MotionEvent, e2: MotionEvent, velocityX: Float, velocityY: Float): Boolean {
-        var xDistance: Float = Math.abs(e1.x - e2.x)
+        /*var xDistance: Float = Math.abs(e1.x - e2.x)
         var xVelocity = Math.abs(velocityX)
         if (xVelocity >= SWIPE_MIN_VEL && xDistance >= SWIPE_MIN_DIST) {
             //Toast.makeText(applicationContext, "Swipe with distance: $xDistance and velocity $xVelocity", Toast.LENGTH_SHORT).show()
             switchToMetada()
             return true
-        }
+        }*/
         Log.d(TAGDEBUG, "Swipe do not recognized $e1 $e2 $velocityX $velocityY")
         return false
     }
 
-    override fun onScroll(e1: MotionEvent?, e2: MotionEvent?, distanceX: Float, distanceY: Float): Boolean {
+    override fun onScroll(e1: MotionEvent, e2: MotionEvent, distanceX: Float, distanceY: Float): Boolean {
         Log.d(TAGDEBUG, "action currently not implemented " + e1.toString())
+        var xDistance: Float = Math.abs(e1.x - e2.x)
+        if (xDistance >= SWIPE_MIN_DIST) {
+            //Toast.makeText(applicationContext, "Swipe with distance: $xDistance and velocity $xVelocity", Toast.LENGTH_SHORT).show()
+            switchToMetada()
+            return true
+        }
         return false
     }
 
