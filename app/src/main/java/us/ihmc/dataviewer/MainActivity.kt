@@ -45,11 +45,11 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
     lateinit var zoomView: PhotoView
     lateinit var getmoreButton: Button
     lateinit var appBundle: Bundle
-    lateinit var metadataView : TextView
+    lateinit var metadataView: TextView
 
     var uriImage: Uri? = null
     var camUriImage: Uri? = null
-    var metaDataVisibile : Boolean = false
+    var metaDataVisibile: Boolean = false
 
     private var mDiscoveredChunks = ConcurrentHashMap<String?, Intent?>()
     /**
@@ -103,9 +103,10 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
         //override the onDoubleTapListener for the view, onDoubleTap browse the filesystem
         zoomView.setOnDoubleTapListener(this)
         //swipe to show the MetaData
-        zoomView.setOnSingleFlingListener { e1, e2, velocityX, velocityY ->
-            this.onFling(e1, e2, velocityX, velocityY)
-        }
+        //the swipe invalidate the zoom
+        //zoomView.setOnSingleFlingListener { e1, e2, velocityX, velocityY ->
+        //    this.onFling(e1, e2, velocityX, velocityY)
+        //}
         //get more button
         getmoreButton = findViewById(R.id.button_getmore) as Button
         getmoreButton.setOnClickListener(
@@ -126,11 +127,16 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
         val mimeType = intent.getStringExtra(Key.MIME_TYPE.toString())
         val filename = intent.getStringExtra(Key.NAME.toString())
 
-         if (Intent.ACTION_SEND.equals(action) && type != null) {
+        if (Intent.ACTION_SEND.equals(action) && type != null) {
             //load metadata
             val metadataUri = intent.getParcelableExtra<Uri>(Intent.EXTRA_TEXT)
-             val strMetadata = Util.readFile(metadataUri.path)
-             //set the metadataView
+            try {
+                val strMetadata = Util.readFile(metadataUri.path)
+                //set the metadataView
+                metadataView.text = strMetadata
+            } catch (e: IOException) {
+                Log.d(TAGDEBUG, "Unable to read file $metadataUri")
+            }
             Log.d(TAGDEBUG, "Received type: $type")
             if (MIMEUtils.isImage(type)) {
                 uriImage = intent.getParcelableExtra(Intent.EXTRA_STREAM)
@@ -141,7 +147,8 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
                 //Open Document
                 getmoreButton.setOnClickListener(
                         {
-                            _ -> Log.d(TAGDEBUG, "Opening document $filename")
+                            _ ->
+                            Log.d(TAGDEBUG, "Opening document $filename")
                             sendOpenDocumentWith(filename, mimeType)
                         }
                 )
@@ -154,7 +161,7 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
                     metaDataVisibile = true
                     metadataView.visibility = View.VISIBLE
                     //set the metadata
-                } catch (e : IOException) {
+                } catch (e: IOException) {
                     Log.d(TAGDEBUG, "Unable to read file " + metadataUri.path)
                 }
             }
@@ -267,6 +274,7 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
 
     override fun onLongPress(e: MotionEvent?) {
         Log.d(TAGDEBUG, "onLongPress Recognized")
+        switchToMetada()
     }
 
     override fun onSingleTapUp(e: MotionEvent?): Boolean {
@@ -280,10 +288,10 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
     }
 
     override fun onFling(e1: MotionEvent, e2: MotionEvent, velocityX: Float, velocityY: Float): Boolean {
-        var xDistance : Float = Math.abs(e1.x - e2.x)
+        var xDistance: Float = Math.abs(e1.x - e2.x)
         var xVelocity = Math.abs(velocityX)
         if (xVelocity >= SWIPE_MIN_VEL && xDistance >= SWIPE_MIN_DIST) {
-            Toast.makeText(applicationContext, "Swipe with distance: $xDistance and velocity $xVelocity", Toast.LENGTH_SHORT).show()
+            //Toast.makeText(applicationContext, "Swipe with distance: $xDistance and velocity $xVelocity", Toast.LENGTH_SHORT).show()
             switchToMetada()
             return true
         }
@@ -315,25 +323,12 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
         val hasMoreChunks = intent?.getBooleanExtra(Key.HAS_MORE_CHUNKS.toString(), false)
         val chunkCount = intent?.getStringExtra(Key.CHUNK_COUNT.toString())
         Log.d(TAGDEBUG, "hasMoreChunks: $hasMoreChunks chunckCount: $chunkCount")
-        if (hasMoreChunks?:false) {
+        if (hasMoreChunks ?: false) {
             getmoreButton.isEnabled = false
         }
         if (!chunkCount.equals("")) {
             getmoreButton.text = getString(R.string.action_get_more_chunks) + " " + chunkCount
         }
-        //Update the counter on the button
-        /*
-        if (hasMoreChunks) {
-            mBtnGetMoreChunks.setEnabled(true)
-            mBtnGetMoreChunks.setTextColor(Color.WHITE)
-        } else {
-            mBtnGetMoreChunks.setEnabled(false)
-            mBtnGetMoreChunks.setTextColor(Color.GRAY)
-        }
-        if (chunkCount != "") {
-            mBtnGetMoreChunks.setText(getString(R.string.action_get_more_chunks) + " " + chunkCount)
-        }
-        */
     }
 
     /**
@@ -351,7 +346,7 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
     /**
      * ADD a Message using DSPro
      */
-    private fun sendAddMessege(filename : String?, mimeType: String?) {
+    private fun sendAddMessege(filename: String?, mimeType: String?) {
         val intent = Intent()
         intent.setAction(Action.ADD_MESSAGE.toString())
         val bundle = Bundle()
