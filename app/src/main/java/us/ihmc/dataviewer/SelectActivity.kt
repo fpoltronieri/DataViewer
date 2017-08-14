@@ -6,6 +6,7 @@ import android.support.v7.app.AppCompatActivity
 import android.util.Log
 import android.view.View
 import android.widget.Button
+import android.widget.Toast
 import com.theartofdev.edmodo.cropper.CropImageView
 
 
@@ -29,7 +30,12 @@ class SelectActivity : AppCompatActivity() {
                 {
                     v -> val points = cropView.cropPoints
                     Log.d(TAGDEBUG, "Selected points: " )
-                    for (p in points) Log.d(TAGDEBUG, "" + p)
+                    var pointString = ""
+                    for (p in points) {
+                        Log.d(TAGDEBUG, "" + p)
+                        pointString = pointString + p + " "
+                    }
+                    Toast.makeText(this, "Points: " + pointString, Toast.LENGTH_SHORT).show()
                 }
         )
 
