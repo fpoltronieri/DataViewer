@@ -72,7 +72,7 @@ class SelectActivity : AppCompatActivity() {
         bundle.putString(Key.MESSAGE_ID.toString(), messageId)
         bundle.putString(Key.MIME_TYPE.toString(), mimeType)
         val intent = Intent()
-        intent.action = Action.REQUEST_MORE_CHUNKS.toString()
+        intent.action = Action.REQUEST_CUSTOM_CHUNK.toString()
         intent.putExtras(bundle)
         applicationContext.sendBroadcast(intent)
         onBackPressed()
