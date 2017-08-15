@@ -49,6 +49,7 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
 
     var uriImage: Uri? = null
     var camUriImage: Uri? = null
+    var messageId: String? = null
     var metaDataVisibile: Boolean = false
 
     private var mDiscoveredChunks = ConcurrentHashMap<String?, Intent?>()
@@ -110,7 +111,7 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
         //get more button
         getmoreButton = findViewById(R.id.button_getmore) as Button
         getmoreButton.setOnClickListener(
-                { _ -> Toast.makeText(this, "Not implemented yet", Toast.LENGTH_SHORT).show() }
+                { _ -> requestMoreChunks() }
         )
 
         //select button
@@ -121,6 +122,7 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
             intent.putExtra("uri", uriImage)
             startActivity(intent)
         })
+
         //the application has received an intent to take a picture
         val action = intent.action.toString()
         val type = intent.type
@@ -203,7 +205,7 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
 
 
     override fun onTouchEvent(event: MotionEvent?): Boolean {
-        gestureDetector?.onTouchEvent(event)
+        gestureDetector.onTouchEvent(event)
         Log.d(TAGDEBUG, "Calling the superclass implementation")
         return super.onTouchEvent(event)
     }
@@ -218,7 +220,6 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
         } catch (ex: android.content.ActivityNotFoundException) {
             Toast.makeText(this, "Please install a File Manager.", Toast.LENGTH_SHORT).show()
         }
-
         return true
     }
 
@@ -278,8 +279,8 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
     }
 
     override fun onSingleTapUp(e: MotionEvent?): Boolean {
-        Log.d(TAGDEBUG, "action currently not implemented " + e.toString())
-        return false
+        Log.d(TAGDEBUG, "onSingle tap recognized " + e.toString())
+        return true
     }
 
     override fun onDown(e: MotionEvent?): Boolean {
@@ -288,25 +289,12 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
     }
 
     override fun onFling(e1: MotionEvent, e2: MotionEvent, velocityX: Float, velocityY: Float): Boolean {
-        /*var xDistance: Float = Math.abs(e1.x - e2.x)
-        var xVelocity = Math.abs(velocityX)
-        if (xVelocity >= SWIPE_MIN_VEL && xDistance >= SWIPE_MIN_DIST) {
-            //Toast.makeText(applicationContext, "Swipe with distance: $xDistance and velocity $xVelocity", Toast.LENGTH_SHORT).show()
-            switchToMetada()
-            return true
-        }*/
         Log.d(TAGDEBUG, "Swipe do not recognized $e1 $e2 $velocityX $velocityY")
         return false
     }
 
     override fun onScroll(e1: MotionEvent, e2: MotionEvent, distanceX: Float, distanceY: Float): Boolean {
         Log.d(TAGDEBUG, "action currently not implemented " + e1.toString())
-        var xDistance: Float = Math.abs(e1.x - e2.x)
-        if (xDistance >= SWIPE_MIN_DIST) {
-            //Toast.makeText(applicationContext, "Swipe with distance: $xDistance and velocity $xVelocity", Toast.LENGTH_SHORT).show()
-            switchToMetada()
-            return true
-        }
         return false
     }
 
@@ -316,8 +304,9 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
     }
 
     override fun onSingleTapConfirmed(e: MotionEvent?): Boolean {
-        Log.d(TAGDEBUG, "action currently not implemented " + e.toString())
-        return false
+        Log.d(TAGDEBUG, "onSingleTap confirmed, calling switchToMetadata() " + e.toString())
+        switchToMetada()
+        return true
     }
 
     override fun onShowPress(e: MotionEvent?) {
@@ -337,6 +326,23 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
         }
     }
 
+    /**
+     * getMore onClickListener
+     */
+    private fun requestMoreChunks() {
+        if (messageId == null) {
+            Toast.makeText(this, "Unable to request, no MessageID found", Toast.LENGTH_LONG).show()
+            Log.d(TAGDEBUG, "requestMoreChunks() Unable to request, no MessageID found")
+            return
+        }
+        val intent = Intent()
+        intent.action = Action.REQUEST_MORE_CHUNKS.toString()
+        val bundle = Bundle()
+        bundle.putString(Key.MESSAGE_ID.toString(), messageId)
+        intent.putExtras(bundle)
+        applicationContext.sendBroadcast(intent)
+        Log.d(TAGDEBUG, "Sent " + Action.REQUEST_MORE_CHUNKS.toString() + " for messageId: " + messageId)
+    }
     /**
      * Open the camera app to take a picture
      */
@@ -411,7 +417,7 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
                     val uri = intent?.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)
                     val mimeType = intent?.getStringExtra(Key.MIME_TYPE.toString())
                     val fileName = intent?.getStringExtra(Key.MESSAGE_ID.toString())
-                    var messageId = intent?.getStringExtra(Key.MESSAGE_ID.toString())
+                    messageId = intent?.getStringExtra(Key.MESSAGE_ID.toString())
                     Log.d(TAGDEBUG, "Received URI: " + uri + " with mimeType: " + mimeType)
                     if (MIMEUtils.isImage(mimeType)) {
                         //if the data is for a different image return
