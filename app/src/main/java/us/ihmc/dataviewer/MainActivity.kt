@@ -37,9 +37,8 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
     val WESPermission = 0x11
     val TAGDEBUG: String = "DEBUG"
     val TAKE_PICTURE = 2
-    //constant values for SWIPE
-    val SWIPE_MIN_DIST = 100
-    val SWIPE_MIN_VEL = 100
+    val JPG_SELECT_CODE = 0
+    val DPR_SELECT_CODE = 1
 
     lateinit var gestureDetector: GestureDetectorCompat
     lateinit var zoomView: PhotoView
@@ -104,21 +103,16 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
         zoomView = findViewById(R.id.zoomView) as PhotoView
         //override the onDoubleTapListener for the view, onDoubleTap browse the filesystem
         zoomView.setOnDoubleTapListener(this)
-        //swipe to show the MetaData
-        //the swipe invalidate the zoom
-        //zoomView.setOnSingleFlingListener { e1, e2, velocityX, velocityY ->
-        //    this.onFling(e1, e2, velocityX, velocityY)
-        //}
         //get more button
         getmoreButton = findViewById(R.id.button_getmore) as Button
         getmoreButton.setOnClickListener(
                 { _ -> requestMoreChunks() }
         )
-
         //select button
         val selectButton = findViewById(R.id.button_select) as Button
         selectButton.setOnClickListener({
-            _ -> selectChunks()
+            _ ->
+            selectChunks()
         })
 
         //the application has received an intent to take a picture
@@ -127,63 +121,7 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
         val filename = intent.getStringExtra(Key.NAME.toString())
         mMessageId = intent.getStringExtra(Key.MESSAGE_ID.toString())
         mMimeType = intent.getStringExtra(Key.MIME_TYPE.toString())
-
-        if (Intent.ACTION_SEND.equals(action) && type != null) {
-            //load metadata
-            val metadataUri = intent.getParcelableExtra<Uri>(Intent.EXTRA_TEXT)
-            try {
-                val strMetadata = Util.readFile(metadataUri.path)
-                //set the metadataView
-                metadataView.text = strMetadata
-            } catch (e: IOException) {
-                Log.d(TAGDEBUG, "Unable to read file $metadataUri")
-            }
-            Log.d(TAGDEBUG, "Received type: $type")
-            if (MIMEUtils.isImage(type)) {
-                mUriImage = intent.getParcelableExtra(Intent.EXTRA_STREAM)
-                Log.d(TAGDEBUG, "Received uri: " + mUriImage)
-                try {
-                    zoomView.setImageURI(mUriImage)
-                } catch (e: Exception) {
-                    switchToMetada()
-                }
-            } else if (MIMEUtils.isPresentation(type)) {
-                mUriImage = Util.getUriToDrawable(applicationContext, R.drawable.powerpoint)
-                zoomView.setImageURI(mUriImage)
-                //Open Document
-                getmoreButton.setOnClickListener(
-                        {
-                            _ ->
-                            Log.d(TAGDEBUG, "Opening document $filename")
-                            sendOpenDocumentWith(filename, mMimeType)
-                        }
-                )
-            } else {
-                //load the metadata JSON
-                val jsonUri = intent.getParcelableExtra<Uri>(Intent.EXTRA_SUBJECT)
-                try {
-                    val formattedJSON = Util.formatJSON(Util.readFile(jsonUri.path))
-                    metadataView.text = formattedJSON
-                    metaDataVisibile = true
-                    metadataView.visibility = View.VISIBLE
-                    //set the metadata
-                } catch (e: IOException) {
-                    Log.d(TAGDEBUG, "Unable to read file " + metadataUri.path)
-                }
-            }
-            //update the chunks
-            if (mDiscoveredChunks[filename] != null) {
-                Log.d(TAGDEBUG, "Previously discovered CHUNK, updating chunk count")
-                val intentChunks = mDiscoveredChunks[filename]
-                updateChunkCount(intentChunks)
-            } else {
-                Log.d(TAGDEBUG, "Fist discovered chunck")
-            }
-        }
-        if (Action.ADD_MESSAGE.toString().equals(action)) {
-            Log.d(TAGDEBUG, "Received intent with action: $action")
-            takePhoto()
-        }
+        handleIntentOnActivity(action, filename, type)
     }
 
     /**
@@ -217,15 +155,6 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
     }
 
     override fun onDoubleTap(e: MotionEvent?): Boolean {
-        //Log.d("DEBUG:", "DoubleTap Recognized")
-        //var intent: Intent = Intent(Intent.ACTION_GET_CONTENT)
-        //intent.setType("image/*")
-        //intent.addCategory(Intent.CATEGORY_OPENABLE)
-        //try {
-        //   startActivityForResult(Intent.createChooser(intent, "Select an Image to display"), 1)
-        //} catch (ex: android.content.ActivityNotFoundException) {
-        //    Toast.makeText(this, "Please install a File Manager.", Toast.LENGTH_SHORT).show()
-        //}
         Log.d(TAGDEBUG, "onDoubleTap Updating the image")
         zoomView.setImageURI(mUriImage)
         return true
@@ -234,6 +163,7 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
 
     /**
      * Switch the View between METADATA and IMAGE
+     * The boolean logic will be replaced
      */
     private fun switchToMetada() {
         if (metaDataVisibile) {
@@ -321,6 +251,37 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
         Log.d(TAGDEBUG, "action currently not implemented " + e.toString())
     }
 
+
+    /**
+     * Show file manager to upload file or route
+     */
+    private fun showFileChooser(isJPEG: Boolean) {
+        val intent = Intent(Intent.ACTION_GET_CONTENT)
+        val msg: String
+        val code: Int
+        if (isJPEG) {
+            //replaced jpeg with jpg
+            intent.type = "image/jpg"
+            msg = "Select a .jpg file to upload"
+            code = JPG_SELECT_CODE
+        } else {
+            intent.type = "*/*"
+            msg = "Select a .dpr file to upload"
+            code = DPR_SELECT_CODE
+        }
+        intent.addCategory(Intent.CATEGORY_OPENABLE)
+        try {
+            startActivityForResult(
+                    Intent.createChooser(intent, msg),
+                    code)
+        } catch (ex: android.content.ActivityNotFoundException) {
+            // Potentially direct the user to the Market with a Dialog
+            Toast.makeText(this, "Please install a File Manager.",
+                    Toast.LENGTH_SHORT).show()
+        }
+
+    }
+
     private fun updateChunkCount(intent: Intent?) {
         Log.d(TAGDEBUG, "updateChunkCount called()")
         val hasMoreChunks = intent?.getBooleanExtra(Key.HAS_MORE_CHUNKS.toString(), false)
@@ -356,6 +317,7 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
         intent.putExtra("mimetype", mMimeType)
         startActivity(intent)
     }
+
     /**
      * getMore onClickListener
      */
@@ -406,7 +368,7 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
      */
     private fun sendGetData(filename: String?, messageId: String?, mimeType: String?) {
         val intent = Intent()
-        intent.setAction(Action.GET_DATA.toString())
+        intent.action = Action.GET_DATA.toString()
         val bundle = Bundle()
         bundle.putString(Key.MESSAGE_ID.toString(), messageId)
         bundle.putString(Key.NAME.toString(), filename)
@@ -449,7 +411,7 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
                     val mimeType = intent?.getStringExtra(Key.MIME_TYPE.toString())
                     val fileName = intent?.getStringExtra(Key.MESSAGE_ID.toString())
                     val messageId = intent?.getStringExtra(Key.MESSAGE_ID.toString())
-                    Log.d(TAGDEBUG, "Received URI: " + uri + " with mimeType: " + mimeType)
+                    Log.d(TAGDEBUG, "Received URI: $uri with mimeType: $mimeType")
                     if (MIMEUtils.isImage(mimeType)) {
                         Log.d(TAGDEBUG, "DATA_ARRIVED for image " + uri?.path + " " + mUriImage?.path)
                         //if the data is for a different image return
@@ -502,9 +464,80 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
     }
 
 
+    private fun handleIntentOnActivity(action: String, filename: String, type: String) {
+        if (Intent.ACTION_SEND.equals(action) && type != null) {
+            //load metadata
+            val metadataUri = intent.getParcelableExtra<Uri>(Intent.EXTRA_TEXT)
+            try {
+                val strMetadata = Util.readFile(metadataUri.path)
+                //set the metadataView
+                metadataView.text = strMetadata
+            } catch (e: IOException) {
+                Log.d(TAGDEBUG, "Unable to read file $metadataUri")
+            }
+            Log.d(TAGDEBUG, "Received type: $type")
+            if (MIMEUtils.isImage(type)) {
+                mUriImage = intent.getParcelableExtra(Intent.EXTRA_STREAM)
+                Log.d(TAGDEBUG, "Received uri: " + mUriImage)
+                try {
+                    zoomView.setImageURI(mUriImage)
+                } catch (e: Exception) {
+                    switchToMetada()
+                }
+            } else if (MIMEUtils.isPresentation(type)) {
+                mUriImage = Util.getUriToDrawable(applicationContext, R.drawable.powerpoint)
+                zoomView.setImageURI(mUriImage)
+                //Open Document
+                getmoreButton.setOnClickListener(
+                        {
+                            _ ->
+                            Log.d(TAGDEBUG, "Opening document $filename")
+                            sendOpenDocumentWith(filename, mMimeType)
+                        }
+                )
+            } else {
+                //load the metadata JSON
+                val jsonUri = intent.getParcelableExtra<Uri>(Intent.EXTRA_SUBJECT)
+                try {
+                    val formattedJSON = Util.formatJSON(Util.readFile(jsonUri.path))
+                    metadataView.text = formattedJSON
+                    metaDataVisibile = true
+                    metadataView.visibility = View.VISIBLE
+                    //set the metadata
+                } catch (e: IOException) {
+                    Log.d(TAGDEBUG, "Unable to read file " + metadataUri.path)
+                }
+            }
+            //update the chunks
+            if (mDiscoveredChunks[filename] != null) {
+                Log.d(TAGDEBUG, "Previously discovered CHUNK, updating chunk count")
+                val intentChunks = mDiscoveredChunks[filename]
+                updateChunkCount(intentChunks)
+            } else {
+                Log.d(TAGDEBUG, "Discovered first chunk for $mUriImage")
+            }
+        }
+        //take a photo using the camera
+        if (Action.ADD_MESSAGE.toString().equals(action)) {
+            Log.d(TAGDEBUG, "Received intent with action: $action")
+            takePhoto()
+        }
+        //disseminate file, never tested
+        if (Action.DISSEMINATE.toString().equals(action)) {
+            Log.d(TAGDEBUG, "Received intent with $action, opening the file manager")
+            showFileChooser(true)
+        }
+        //upload a dpr file
+        if (Action.LOAD_ROUTE.toString().equals(action)) {
+            Log.d(TAGDEBUG, "Received intent with $action, loading a route")
+            showFileChooser(false)
+        }
+    }
+
+
     override fun onResume() {
         super.onResume()
-        Log.d(TAGDEBUG, "Called onResume()")
+        Log.d(TAGDEBUG, "Called onResume() registering the broadcastReceiver")
         val dataViewerFilter = IntentFilter()
         dataViewerFilter.addAction(Action.DATA_ARRIVED.toString())
         registerReceiver(broadcastReceiver, dataViewerFilter)
@@ -512,7 +545,7 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
 
     override fun onDestroy() {
         super.onDestroy()
-        Log.d(TAGDEBUG, "Called function onDestroy")
+        Log.d(TAGDEBUG, "Called function onDestroy()")
         unregisterReceiver(broadcastReceiver)
     }
 }
