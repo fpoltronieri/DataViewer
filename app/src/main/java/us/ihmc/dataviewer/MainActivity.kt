@@ -255,29 +255,29 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
     /**
      * Show file manager to upload file or route
      */
-    private fun showFileChooser(isJPEG: Boolean) {
+    private fun showFileChooser(inputCode : Int) {
         val intent = Intent(Intent.ACTION_GET_CONTENT)
         val msg: String
-        val code: Int
-        if (isJPEG) {
-            //replaced jpeg with jpg
-            intent.type = "image/jpg"
-            msg = "Select a .jpg file to upload"
-            code = JPG_SELECT_CODE
-        } else {
-            intent.type = "*/*"
-            msg = "Select a .dpr file to upload"
-            code = DPR_SELECT_CODE
+        when (inputCode){
+            JPG_SELECT_CODE -> {
+                intent.type = "image/jpg"
+                msg = "Select a .jpg file to upload"
+            }
+            DPR_SELECT_CODE -> {
+                intent.type = "*/*"
+                msg = "Select a .dpr file to upload"
+            }
+            else -> {
+                Log.d(TAGDEBUG, "Invalid input code $inputCode returning")
+                return
+            }
         }
         intent.addCategory(Intent.CATEGORY_OPENABLE)
         try {
             startActivityForResult(
-                    Intent.createChooser(intent, msg),
-                    code)
+                    Intent.createChooser(intent, msg), inputCode)
         } catch (ex: android.content.ActivityNotFoundException) {
-            // Potentially direct the user to the Market with a Dialog
-            Toast.makeText(this, "Please install a File Manager.",
-                    Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Please install a File Manager.", Toast.LENGTH_SHORT).show()
         }
 
     }
@@ -496,7 +496,7 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
                         }
                 )
             } else {
-                //load the metadata JSON
+                //load the JSON metadata
                 val jsonUri = intent.getParcelableExtra<Uri>(Intent.EXTRA_SUBJECT)
                 try {
                     val formattedJSON = Util.formatJSON(Util.readFile(jsonUri.path))
@@ -525,12 +525,12 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
         //disseminate file, never tested
         if (Action.DISSEMINATE.toString().equals(action)) {
             Log.d(TAGDEBUG, "Received intent with $action, opening the file manager")
-            showFileChooser(true)
+            showFileChooser(JPG_SELECT_CODE)
         }
         //upload a dpr file
         if (Action.LOAD_ROUTE.toString().equals(action)) {
             Log.d(TAGDEBUG, "Received intent with $action, loading a route")
-            showFileChooser(false)
+            showFileChooser(DPR_SELECT_CODE)
         }
     }
 
