@@ -89,11 +89,12 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        Log.d(TAGDEBUG, "onCreate() called")
         super.onCreate(savedInstanceState)
         appBundle = Bundle()
         setContentView(R.layout.activity_main)
         verifyPermission(this)
+        //set the build timestamp
+        this.supportActionBar?.subtitle = "Build " + SimpleDateFormat.getInstance().format(Date(BuildConfig.TIMESTAMP))
         //set the gestureDetectore for the application
         gestureDetector = GestureDetectorCompat(this, this)
         gestureDetector.setOnDoubleTapListener(this)
@@ -464,7 +465,7 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
     }
 
 
-    private fun handleIntentOnActivity(action: String, filename: String, type: String) {
+    private fun handleIntentOnActivity(action: String?, filename: String?, type: String?) {
         if (Intent.ACTION_SEND.equals(action) && type != null) {
             //load metadata
             val metadataUri = intent.getParcelableExtra<Uri>(Intent.EXTRA_TEXT)
