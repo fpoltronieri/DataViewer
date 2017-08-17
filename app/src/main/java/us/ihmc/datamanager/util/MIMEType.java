@@ -1,4 +1,4 @@
-package us.ihmc.dataviewer.util;
+package us.ihmc.datamanager.util;
 
 /**
  * MIMEType.java

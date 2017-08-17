@@ -1,4 +1,4 @@
-package us.ihmc.dataviewer
+package us.ihmc.datamanager
 
 import android.Manifest
 import android.app.Activity
@@ -23,7 +23,7 @@ import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
 import com.github.chrisbanes.photoview.PhotoView
-import us.ihmc.dataviewer.util.*
+import us.ihmc.datamanager.util.*
 import java.io.File
 import java.io.IOException
 import java.text.SimpleDateFormat

@@ -1,4 +1,4 @@
-package us.ihmc.dataviewer.util;
+package us.ihmc.datamanager.util;
 /*
  * Copyright (C) 2009 The Android Open Source Project
  *
@@ -17,10 +17,8 @@ package us.ihmc.dataviewer.util;
 
 
 import android.app.Activity;
-import android.app.ProgressDialog;
 import android.content.ContentResolver;
 import android.content.Context;
-import android.content.res.Resources;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -30,7 +28,6 @@ import android.graphics.Rect;
 import android.net.Uri;
 import android.os.Debug;
 import android.os.Environment;
-import android.os.Handler;
 import android.util.Log;
 import android.view.Surface;
 

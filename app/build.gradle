@@ -8,7 +8,7 @@ android {
     compileSdkVersion 25
     buildToolsVersion "25.0.2"
     defaultConfig {
-        applicationId "us.ihmc.dataviewer"
+        applicationId "us.ihmc.datamanager"
         minSdkVersion 19
         targetSdkVersion 23
         versionCode 1

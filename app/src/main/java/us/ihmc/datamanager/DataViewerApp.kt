@@ -1,4 +1,4 @@
-package us.ihmc.dataviewer
+package us.ihmc.datamanager
 
 import android.app.Application
 

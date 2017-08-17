@@ -1,4 +1,4 @@
-package us.ihmc.dataviewer
+package us.ihmc.datamanager
 
 import android.content.Intent
 import android.net.Uri
@@ -8,8 +8,8 @@ import android.util.Log
 import android.widget.Button
 import android.widget.Toast
 import com.theartofdev.edmodo.cropper.CropImageView
-import us.ihmc.dataviewer.util.Action
-import us.ihmc.dataviewer.util.Key
+import us.ihmc.datamanager.util.Action
+import us.ihmc.datamanager.util.Key
 
 
 class SelectActivity : AppCompatActivity() {
