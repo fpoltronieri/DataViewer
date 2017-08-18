@@ -112,14 +112,7 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
         //select button
         val selectButton = findViewById(R.id.button_select) as Button
         selectButton.setOnClickListener({
-            _ ->
-            if (mUriImage == null) {
-                Toast.makeText(this, "uriImage not set", Toast.LENGTH_SHORT)
-            }
-            if (mMessageId == null) {
-                Toast.makeText(this, "messageID not set", Toast.LENGTH_SHORT)
-            }
-            selectChunks()
+            _ -> selectChunks()
         })
 
         //the application has received an intent to take a picture
@@ -310,6 +303,13 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
      * Request a CUSTOM chunk
      */
     private fun selectChunks() {
+        if (mUriImage == null) {
+            Toast.makeText(this, "uriImage not set", Toast.LENGTH_SHORT)
+            return
+        }
+        if (mMessageId == null) {
+            Toast.makeText(this, "messageID not set", Toast.LENGTH_SHORT)
+        }
         val intent = Intent(this, SelectActivity::class.java)
         intent.putExtra("uri", mUriImage)
         intent.putExtra("messageid", mMessageId)
