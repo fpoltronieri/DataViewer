@@ -106,9 +106,9 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
         zoomView.setOnDoubleTapListener(this)
         //get more button
         getmoreButton = findViewById(R.id.button_getmore) as Button
-        getmoreButton.setOnClickListener(
-                { _ -> requestMoreChunks() }
-        )
+        getmoreButton.setOnClickListener({
+            _ -> requestMoreChunks()
+        })
         //select button
         val selectButton = findViewById(R.id.button_select) as Button
         selectButton.setOnClickListener({
