@@ -1,4 +1,4 @@
-package us.ihmc.datamanager.util;
+package us.ihmc.android.aci.dspro.datamanager.util;
 /*
  * Copyright (C) 2009 The Android Open Source Project
  *

@@ -1,4 +1,4 @@
-package us.ihmc.datamanager.util;
+package us.ihmc.android.aci.dspro.datamanager.util;
 
 /**
  * MIMEType.java

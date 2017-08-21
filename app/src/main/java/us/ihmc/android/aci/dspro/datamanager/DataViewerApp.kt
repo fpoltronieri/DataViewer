@@ -1,4 +1,4 @@
-package us.ihmc.datamanager
+package us.ihmc.android.aci.dspro.datamanager
 
 import android.app.Application
 

@@ -8,7 +8,7 @@ android {
     compileSdkVersion 25
     buildToolsVersion "25.0.2"
     defaultConfig {
-        applicationId "us.ihmc.datamanager"
+        applicationId "us.ihmc.android.aci.dspro.datamanager"
         minSdkVersion 19
         targetSdkVersion 23
         versionCode 1

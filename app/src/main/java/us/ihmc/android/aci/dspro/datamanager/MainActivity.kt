@@ -1,4 +1,4 @@
-package us.ihmc.datamanager
+package us.ihmc.android.aci.dspro.datamanager
 
 import android.Manifest
 import android.app.Activity
@@ -23,7 +23,8 @@ import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
 import com.github.chrisbanes.photoview.PhotoView
-import us.ihmc.datamanager.util.*
+import us.ihmc.android.aci.dspro.datamanager.util.*
+import us.ihmc.android.aci.dspro.datamanager.R
 import java.io.File
 import java.io.IOException
 import java.text.SimpleDateFormat
@@ -373,7 +374,7 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
         bundle.putString(Key.NAME.toString(), filename)
         bundle.putString(Key.MIME_TYPE.toString(), mimeType)
         intent.putExtras(bundle)
-        Log.d(TAGDEBUG, "Sending  $Action.GET_DATA.toString() in broadcast with mMessageId: $messageId  filename: $filename")
+        Log.d(TAGDEBUG, "Sending  ${intent.action} in broadcast with mMessageId: $messageId  filename: $filename")
         applicationContext.sendBroadcast(intent)
     }
 
@@ -402,7 +403,7 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
      */
     val broadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent?) {
-            val action = Action.fromString(intent?.action)
+            val action = Action.Companion.fromString(intent?.action)
             Log.d(TAGDEBUG, "Received an intent: " + intent + " with Action: " + action)
             when (action) {
                 Action.DATA_ARRIVED -> {
