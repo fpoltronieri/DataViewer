@@ -50,7 +50,7 @@ class SelectActivity : AppCompatActivity() {
             pointString = pointString + p + " "
         }
         Toast.makeText(this, "Points: " + pointString, Toast.LENGTH_SHORT).show()
-        //TODO simplify this orrible casting
+        //TODO simplify this horrible casting
         val x0 = points[0].toDouble()
         val y0 = points[1].toDouble()
         val x1 = points[2].toDouble()
