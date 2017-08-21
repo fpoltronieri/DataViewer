@@ -410,55 +410,42 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
                     val mimeType = intent?.getStringExtra(Key.MIME_TYPE.toString())
                     val fileName = intent?.getStringExtra(Key.MESSAGE_ID.toString())
                     val messageId = intent?.getStringExtra(Key.MESSAGE_ID.toString())
+                    val isImage = MIMEUtils.isImage(mimeType)
                     Log.d(TAGDEBUG, "Received URI: $uri with mimeType: $mimeType")
-                    if (MIMEUtils.isImage(mimeType)) {
-                        Log.d(TAGDEBUG, "DATA_ARRIVED for image " + uri?.path + " " + mUriImage?.path)
-                        //if the data is for a different image return
-                        if ((uri?.path?.equals(mUriImage?.path)) == false) return
-                        mUriImage = uri
-                        val isgetData = intent?.getBooleanExtra(Key.IS_A_GET_DATA.toString(), false)
-                        Log.d(TAGDEBUG, "DATA_ARRIVED for image isgetData: " + isgetData)
-                        if (isgetData == true) {
-                            Log.d(TAGDEBUG, "Received return from GET_DATA, settting the image")
+                    if (isImage && (uri?.path?.equals(mUriImage?.path) == false)) return
+                    if (isImage) mUriImage = uri
+                    val isgetData = intent?.getBooleanExtra(Key.IS_A_GET_DATA.toString(), false)
+                    Log.d(TAGDEBUG, "DATA_ARRIVED: " + isgetData)
+                    if (isgetData == true) {
+                        Log.d(TAGDEBUG, "Received return from GET_DATA")
+                        if (isImage) {
                             try {
                                 zoomView.setImageURI(mUriImage)
                             } catch (e: Exception) {
                                 switchToMetada()
                             }
-                        } else {
-                            Log.d(TAGDEBUG, "Received callback DATA_ARRIVED, sending GET_DATA request")
-                            mDiscoveredChunks.put(fileName, intent)
-                            updateChunkCount(intent)
-                            sendGetData(fileName, messageId, mimeType)
-                            return
                         }
-                    } else if (MIMEUtils.isPresentation(mimeType)) {
-                        val isgetData = intent?.getBooleanExtra(Key.IS_A_GET_DATA.toString(), false)
-                        if (isgetData == true) {
-                            Log.d(TAGDEBUG, "Received actual return from GET_DATA, presentation data")
-                        } else {
-                            Log.d(TAGDEBUG, "Received callback DATA_ARRIVED, sending GET_DATA request")
-                            updateChunkCount(intent)
-                            mDiscoveredChunks.put(fileName, intent)
-                            sendGetData(fileName, messageId, mimeType)
-                        }
-                        getmoreButton.setOnClickListener(
-                                { _ ->
-                                    Log.d(TAGDEBUG, "Trying to open the document $fileName mimeType $mimeType")
-                                    sendOpenDocumentWith(fileName, mimeType)
-                                }
-                        )
                     } else {
-                        Log.d(TAGDEBUG, "Received type do not recognized")
+                        Log.d(TAGDEBUG, "Received callback DATA_ARRIVED, requesting DATA")
+                        mDiscoveredChunks.put(fileName, intent)
+                        updateChunkCount(intent)
+                        sendGetData(fileName, messageId, mimeType)
+                        //if presentation change the listen for getmore
+                        if (MIMEUtils.isPresentation(mimeType)) {
+                            getmoreButton.setOnClickListener(
+                                    { _ ->
+                                        Log.d(TAGDEBUG, "Trying to open the document $fileName mimeType $mimeType")
+                                        sendOpenDocumentWith(fileName, mimeType)
+                                    }
+                            )
+                        }
+                        return
                     }
-
                 }
                 else -> {
                     Log.d(TAGDEBUG, "Unrecognized action " + action)
                 }
             }
-
-
         }
     }
 
