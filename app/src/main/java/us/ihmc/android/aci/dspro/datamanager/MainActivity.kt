@@ -178,7 +178,7 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
             metaDataVisibile = true
             metadataView.visibility = View.VISIBLE
             zoomView.visibility = View.INVISIBLE
-            Log.d(TAGDEBUG, "Metadata: " + metadataView.text.toString() )
+            //Log.d(TAGDEBUG, "Metadata: " + metadataView.text.toString() )
         }
 
     }
@@ -423,7 +423,10 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
                     val messageId = intent?.getStringExtra(Key.MESSAGE_ID.toString())
                     val isImage = MIMEUtils.isImage(mimeType)
                     Log.d(TAGDEBUG, "Received URI: $uri with mimeType: $mimeType")
-                    if (isImage && (uri?.path?.equals(mUriImage?.path) == false)) return
+                    if (isImage && (uri?.path?.equals(mUriImage?.path) == false)) {
+                        Log.d(TAGDEBUG, "Data for different pic " + uri?.path + " " + mUriImage?.path)
+                        return
+                    }
                     if (isImage) mUriImage = uri
                     val isgetData = intent?.getBooleanExtra(Key.IS_A_GET_DATA.toString(), false)
                     Log.d(TAGDEBUG, "isgetData: " + isgetData)
@@ -431,7 +434,6 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
                         Log.d(TAGDEBUG, "Received return from GET_DATA")
                         if (isImage) {
                             try {
-                                val loadingUri = Util.getUriToDrawable(applicationContext, R.drawable.loading)
                                 zoomView.setImageURI(mUriImage)
                             } catch (e: FileNotFoundException) {
                                 Log.d(TAGDEBUG, "Image still not available, switching to metadata view")
@@ -443,23 +445,22 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
                         mDiscoveredChunks.put(fileName, intent)
                         updateChunkCount(intent)
                         sendGetData(fileName, messageId, mimeType)
-                        //if presentation change the listen for getmore
-                        if (MIMEUtils.isPresentation(mimeType)) {
-                            getmoreButton.setOnClickListener(
-                                    { _ ->
-                                        Log.d(TAGDEBUG, "Trying to open the document $fileName mimeType $mimeType")
-                                        sendOpenDocumentWith(fileName, mimeType)
-                                    }
-                            )
-                        } else if (isImage) {
+                        //TODO remove the if (isImage) code
+                        /*if (isImage) {
                             try {
-                                val loadingUri = Util.getUriToDrawable(applicationContext, R.drawable.loading)
                                 zoomView.setImageURI(loadingUri)
                                 zoomView.setImageURI(mUriImage)
                             } catch (e: FileNotFoundException) {
                                 Log.d(TAGDEBUG, "Image still not available, switching to metadata view")
                                 switchToMetada()
                             }
+                        } else */if (MIMEUtils.isPresentation(mimeType)) {
+                            getmoreButton.setOnClickListener(
+                                    { _ ->
+                                        Log.d(TAGDEBUG, "Trying to open the document $fileName mimeType $mimeType")
+                                        sendOpenDocumentWith(fileName, mimeType)
+                                    }
+                            )
                         }
                         return
                     }
