@@ -414,7 +414,7 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
         override fun onReceive(context: Context, intent: Intent?) {
             val action = Action.Companion.fromString(intent?.action)
             Log.d(TAGDEBUG, "Received an intent: " + intent + " with Action: " + action)
-            val loadingUri = Util.getUriToDrawable(applicationContgit ext, R.drawable.loading)
+            val loadingUri = Util.getUriToDrawable(applicationContext, R.drawable.loading)
             when (action) {
                 Action.DATA_ARRIVED -> {
                     val uri = intent?.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)
