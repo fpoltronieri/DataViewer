@@ -30,7 +30,8 @@ enum class Action private constructor(private val _code: Int, private val _signa
     LOAD_ROUTE(20, "us.ihmc.android.aci.dspro.LOAD_ROUTE"),
     REGISTER_PATH(21, "us.ihmc.android.aci.dspro.REGISTER_PATH"),
     SEARCH(22, "us.ihmc.android.aci.dspro.SEARCH"),
-    VOI(23, "us.ihmc.android.aci.dspro.VOI");
+    VOI(23, "us.ihmc.android.aci.dspro.VOI"),
+    REQUESTED_CUSTOM_CHUNK(24, "us.ihmc.android.dspro.datamanager.REQUESTED_CUSTOM_CHUNK");
 
     override fun toString(): String {
         return _signature
@@ -94,6 +95,8 @@ enum class Action private constructor(private val _code: Int, private val _signa
                 return SEARCH
             } else if (signature == "us.ihmc.android.aci.dspro.VOI") {
                 return VOI
+            } else if (signature == "us.ihmc.android.dspro.datamanager.REQUESTED_CUSTOM_CHUNK") {
+                return REQUESTED_CUSTOM_CHUNK
             } else {
                 return null
             }

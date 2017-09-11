@@ -8,6 +8,8 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.content.res.Configuration
+import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
 import android.net.Uri
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
@@ -26,6 +28,7 @@ import com.github.chrisbanes.photoview.PhotoView
 import us.ihmc.android.aci.dspro.datamanager.util.*
 import us.ihmc.android.aci.dspro.datamanager.R
 import java.io.File
+import java.io.FileInputStream
 import java.io.FileNotFoundException
 import java.io.IOException
 import java.text.SimpleDateFormat
@@ -33,7 +36,6 @@ import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 
 class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, GestureDetector.OnDoubleTapListener {
-
     //constant values
     val URIIMAGE = "URIIMAGE"
     val WESPermission = 0x11
@@ -158,7 +160,7 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
 
     override fun onDoubleTap(e: MotionEvent?): Boolean {
         Log.d(TAGDEBUG, "onDoubleTap Updating the image")
-        zoomView.setImageURI(mUriImage)
+        setImage(mUriImage)
         return true
     }
 
@@ -172,13 +174,11 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
             metaDataVisibile = false
             metadataView.visibility = View.INVISIBLE
             //also set the mUriImage
-            zoomView.setImageURI(mUriImage)
-            zoomView.visibility = View.VISIBLE
+            setImage(mUriImage)
         } else {
             metaDataVisibile = true
             metadataView.visibility = View.VISIBLE
             zoomView.visibility = View.INVISIBLE
-            //Log.d(TAGDEBUG, "Metadata: " + metadataView.text.toString() )
         }
 
     }
@@ -201,12 +201,7 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
                 Toast.makeText(this, "Picture selected " + data.data.path, Toast.LENGTH_SHORT).show()
                 mUriImage = data.data
                 Log.d(TAGDEBUG, "Uri set for the last image " + mUriImage)
-                try {
-                    zoomView.setImageURI(mUriImage)
-                } catch(e : FileNotFoundException) {
-                    Log.d(TAGDEBUG, "Image still not available, switching to metadata view")
-                    switchToMetada()
-                }
+                setImage(mUriImage)
             }
             TAKE_PICTURE -> {
                 if (resultCode == Activity.RESULT_OK) {
@@ -334,8 +329,6 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
             Log.d(TAGDEBUG, "requestMoreChunks() Unable to request, no MessageID found")
             return
         }
-        val uri = Util.getUriToDrawable(applicationContext, R.drawable.loading)
-        zoomView.setImageURI(uri)
         val intent = Intent()
         intent.action = Action.REQUEST_MORE_CHUNKS.toString()
         val bundle = Bundle()
@@ -343,6 +336,7 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
         intent.putExtras(bundle)
         applicationContext.sendBroadcast(intent)
         Log.d(TAGDEBUG, "Sent " + Action.REQUEST_MORE_CHUNKS.toString() + " for mMessageId: " + mMessageId)
+        setLoadingStatus()
     }
 
     /**
@@ -412,14 +406,13 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
      */
     val broadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent?) {
-            val action = Action.Companion.fromString(intent?.action)
-            Log.d(TAGDEBUG, "Received an intent: " + intent + " with Action: " + action)
-            val loadingUri = Util.getUriToDrawable(applicationContext, R.drawable.loading)
+            val action = Action.Companion.fromString(intent?.action.toString())
+            Log.d(TAGDEBUG, "Received an intent: ${intent} with Action: $action while intent.action = ${intent?.action} ")
             when (action) {
                 Action.DATA_ARRIVED -> {
                     val uri = intent?.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)
                     val mimeType = intent?.getStringExtra(Key.MIME_TYPE.toString())
-                    val fileName = intent?.getStringExtra(Key.MESSAGE_ID.toString())
+                    val fileName = intent?.getStringExtra(Key.NAME.toString())
                     val messageId = intent?.getStringExtra(Key.MESSAGE_ID.toString())
                     val isImage = MIMEUtils.isImage(mimeType)
                     Log.d(TAGDEBUG, "Received URI: $uri with mimeType: $mimeType")
@@ -433,12 +426,7 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
                     if (isgetData == true) {
                         Log.d(TAGDEBUG, "Received return from GET_DATA")
                         if (isImage) {
-                            try {
-                                zoomView.setImageURI(mUriImage)
-                            } catch (e: FileNotFoundException) {
-                                Log.d(TAGDEBUG, "Image still not available, switching to metadata view")
-                                switchToMetada()
-                            }
+                            setImage(mUriImage)
                         }
                     } else {
                         Log.d(TAGDEBUG, "Received callback DATA_ARRIVED, requesting DATA")
@@ -446,15 +434,7 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
                         updateChunkCount(intent)
                         sendGetData(fileName, messageId, mimeType)
                         //TODO remove the if (isImage) code
-                        /*if (isImage) {
-                            try {
-                                zoomView.setImageURI(loadingUri)
-                                zoomView.setImageURI(mUriImage)
-                            } catch (e: FileNotFoundException) {
-                                Log.d(TAGDEBUG, "Image still not available, switching to metadata view")
-                                switchToMetada()
-                            }
-                        } else */if (MIMEUtils.isPresentation(mimeType)) {
+                        if (MIMEUtils.isPresentation(mimeType)) {
                             getmoreButton.setOnClickListener(
                                     { _ ->
                                         Log.d(TAGDEBUG, "Trying to open the document $fileName mimeType $mimeType")
@@ -465,6 +445,11 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
                         return
                     }
                 }
+                Action.REQUESTED_CUSTOM_CHUNK -> {
+                    //visualize the loading bar
+                    setImage(mUriImage)
+                    setLoadingStatus()
+                }
                 else -> {
                     Log.d(TAGDEBUG, "Unrecognized action " + action)
                 }
@@ -472,7 +457,29 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
         }
     }
 
+    private fun setLoadingStatus() {
+        findViewById(R.id.loadingBar).visibility = View.VISIBLE
+        zoomView.alpha = 0.5F
+    }
 
+    private fun setImage(uri: Uri?){
+        findViewById(R.id.loadingBar).visibility = View.INVISIBLE
+        try {
+            zoomView.alpha = 1.0F
+            zoomView.invalidate()
+            zoomView.setImageDrawable(ColorDrawable(Color.TRANSPARENT))
+            //the only way to prevent the Exception is to open the file here
+            //and catch the Exception in this method
+            val image = FileInputStream(mUriImage?.path)
+            image.close()
+            zoomView.setImageURI(uri)
+            zoomView.visibility = View.VISIBLE
+        } catch (e: java.io.FileNotFoundException) {
+            Log.d(TAGDEBUG,"Catched Exception ${e.message} in setImage()")
+            metaDataVisibile = false
+            switchToMetada()
+        }
+    }
     private fun handleIntentOnActivity(action: String?, filename: String?, type: String?) {
         if (Intent.ACTION_SEND.equals(action) && type != null) {
             //load metadata
@@ -488,12 +495,7 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
             if (MIMEUtils.isImage(type)) {
                 mUriImage = intent.getParcelableExtra(Intent.EXTRA_STREAM)
                 Log.d(TAGDEBUG, "Received uri: " + mUriImage)
-                try {
-                    zoomView.setImageURI(mUriImage)
-                } catch (e: FileNotFoundException) {
-                    Log.d(TAGDEBUG, "Image still not available, switching to metadata view")
-                    switchToMetada()
-                }
+                setImage(mUriImage)
             } else if (MIMEUtils.isPresentation(type)) {
                 mUriImage = Util.getUriToDrawable(applicationContext, R.drawable.powerpoint)
                 zoomView.setImageURI(mUriImage)
@@ -542,6 +544,9 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
             Log.d(TAGDEBUG, "Received intent with $action, loading a route")
             showFileChooser(DPR_SELECT_CODE)
         }
+        if (Action.REQUESTED_CUSTOM_CHUNK.toString().equals(action)) {
+            setLoadingStatus()
+        }
     }
 
 
@@ -550,6 +555,7 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
         Log.d(TAGDEBUG, "Called onResume() registering the broadcastReceiver")
         val dataViewerFilter = IntentFilter()
         dataViewerFilter.addAction(Action.DATA_ARRIVED.toString())
+        dataViewerFilter.addAction(Action.REQUESTED_CUSTOM_CHUNK.toString())
         registerReceiver(broadcastReceiver, dataViewerFilter)
     }
 

@@ -75,6 +75,11 @@ class SelectActivity : AppCompatActivity() {
         intent.action = Action.REQUEST_CUSTOM_CHUNK.toString()
         intent.putExtras(bundle)
         applicationContext.sendBroadcast(intent)
+        Log.d(TAGDEBUG, "Sent intent with action ${intent.action}")
+        val loadingIntent = Intent()
+        loadingIntent.action = Action.REQUESTED_CUSTOM_CHUNK.toString()
+        Log.d(TAGDEBUG, "Sent intent with action ${loadingIntent.action}")
+        applicationContext.sendBroadcast(loadingIntent)
         onBackPressed()
     }
 
