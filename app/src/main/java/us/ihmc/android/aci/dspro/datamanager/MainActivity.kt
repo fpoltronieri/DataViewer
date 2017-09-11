@@ -110,13 +110,13 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
         zoomView.setOnDoubleTapListener(this)
         //get more button
         getmoreButton = findViewById(R.id.button_getmore) as Button
-        getmoreButton.setOnClickListener({
-            _ -> requestMoreChunks()
+        getmoreButton.setOnClickListener({ _ ->
+            requestMoreChunks()
         })
         //select button
         val selectButton = findViewById(R.id.button_select) as Button
-        selectButton.setOnClickListener({
-            _ -> selectChunks()
+        selectButton.setOnClickListener({ _ ->
+            selectChunks()
         })
 
         //the application has received an intent to take a picture
@@ -258,10 +258,10 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
     /**
      * Show file manager to upload file or route
      */
-    private fun showFileChooser(inputCode : Int) {
+    private fun showFileChooser(inputCode: Int) {
         val intent = Intent(Intent.ACTION_GET_CONTENT)
         val msg: String
-        when (inputCode){
+        when (inputCode) {
             JPG_SELECT_CODE -> {
                 intent.type = "image/jpg"
                 msg = "Select a .jpg file to upload"
@@ -462,7 +462,7 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
         zoomView.alpha = 0.5F
     }
 
-    private fun setImage(uri: Uri?){
+    private fun setImage(uri: Uri?) {
         findViewById(R.id.loadingBar).visibility = View.INVISIBLE
         try {
             zoomView.alpha = 1.0F
@@ -475,77 +475,81 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
             zoomView.setImageURI(uri)
             zoomView.visibility = View.VISIBLE
         } catch (e: java.io.FileNotFoundException) {
-            Log.d(TAGDEBUG,"Catched Exception ${e.message} in setImage()")
+            Log.d(TAGDEBUG, "Catched Exception ${e.message} in setImage()")
             metaDataVisibile = false
             switchToMetada()
         }
     }
+
     private fun handleIntentOnActivity(action: String?, filename: String?, type: String?) {
-        if (Intent.ACTION_SEND.equals(action) && type != null) {
-            //load metadata
-            val metadataUri = intent.getParcelableExtra<Uri>(Intent.EXTRA_TEXT)
-            try {
-                val strMetadata = Util.readFile(metadataUri.path)
-                //set the metadataView
-                metadataView.text = strMetadata
-            } catch (e: IOException) {
-                Log.d(TAGDEBUG, "Unable to read file $metadataUri")
-            }
-            Log.d(TAGDEBUG, "Received type: $type")
-            if (MIMEUtils.isImage(type)) {
-                mUriImage = intent.getParcelableExtra(Intent.EXTRA_STREAM)
-                Log.d(TAGDEBUG, "Received uri: " + mUriImage)
-                setImage(mUriImage)
-            } else if (MIMEUtils.isPresentation(type)) {
-                mUriImage = Util.getUriToDrawable(applicationContext, R.drawable.powerpoint)
-                zoomView.setImageURI(mUriImage)
-                //Open Document
-                getmoreButton.setOnClickListener(
-                        {
-                            _ ->
-                            Log.d(TAGDEBUG, "Opening document $filename")
-                            sendOpenDocumentWith(filename, mMimeType)
-                        }
-                )
-            } else {
-                //load the JSON metadata
-                val jsonUri = intent.getParcelableExtra<Uri>(Intent.EXTRA_SUBJECT)
+        when (action) {
+            Intent.ACTION_SEND -> {
+                if (type == null) return
+                //load metadata
+                val metadataUri = intent.getParcelableExtra<Uri>(Intent.EXTRA_TEXT)
                 try {
-                    val formattedJSON = Util.formatJSON(Util.readFile(jsonUri.path))
-                    metadataView.text = formattedJSON
-                    metaDataVisibile = true
-                    metadataView.visibility = View.VISIBLE
-                    //set the metadata
+                    val strMetadata = Util.readFile(metadataUri.path)
+                    //set the metadataView
+                    metadataView.text = strMetadata
                 } catch (e: IOException) {
-                    Log.d(TAGDEBUG, "Unable to read file " + metadataUri.path)
+                    Log.d(TAGDEBUG, "Unable to read file $metadataUri")
+                }
+                Log.d(TAGDEBUG, "Received type: $type")
+                if (MIMEUtils.isImage(type)) {
+                    mUriImage = intent.getParcelableExtra(Intent.EXTRA_STREAM)
+                    Log.d(TAGDEBUG, "Received uri: " + mUriImage)
+                    setImage(mUriImage)
+                } else if (MIMEUtils.isPresentation(type)) {
+                    mUriImage = Util.getUriToDrawable(applicationContext, R.drawable.powerpoint)
+                    zoomView.setImageURI(mUriImage)
+                    //Open Document
+                    getmoreButton.setOnClickListener(
+                            { _ ->
+                                Log.d(TAGDEBUG, "Opening document $filename")
+                                sendOpenDocumentWith(filename, mMimeType)
+                            }
+                    )
+                } else {
+                    //load the JSON metadata
+                    val jsonUri = intent.getParcelableExtra<Uri>(Intent.EXTRA_SUBJECT)
+                    try {
+                        val formattedJSON = Util.formatJSON(Util.readFile(jsonUri.path))
+                        metadataView.text = formattedJSON
+                        metaDataVisibile = true
+                        metadataView.visibility = View.VISIBLE
+                        //set the metadata
+                    } catch (e: IOException) {
+                        Log.d(TAGDEBUG, "Unable to read file " + metadataUri.path)
+                    }
+                }
+                //update the chunks
+                if (mDiscoveredChunks[filename] != null) {
+                    Log.d(TAGDEBUG, "Previously discovered CHUNK, updating chunk count")
+                    val intentChunks = mDiscoveredChunks[filename]
+                    updateChunkCount(intentChunks)
+                } else {
+                    Log.d(TAGDEBUG, "Discovered first chunk for $mUriImage")
                 }
             }
-            //update the chunks
-            if (mDiscoveredChunks[filename] != null) {
-                Log.d(TAGDEBUG, "Previously discovered CHUNK, updating chunk count")
-                val intentChunks = mDiscoveredChunks[filename]
-                updateChunkCount(intentChunks)
-            } else {
-                Log.d(TAGDEBUG, "Discovered first chunk for $mUriImage")
+            //take a photo using the camera
+            Action.ADD_MESSAGE.toString() -> {
+                Log.d(TAGDEBUG, "Received intent with action: $action")
+                takePhoto()
             }
-        }
-        //take a photo using the camera
-        if (Action.ADD_MESSAGE.toString().equals(action)) {
-            Log.d(TAGDEBUG, "Received intent with action: $action")
-            takePhoto()
-        }
-        //disseminate file, never tested
-        if (Action.DISSEMINATE.toString().equals(action)) {
-            Log.d(TAGDEBUG, "Received intent with $action, opening the file manager")
-            showFileChooser(JPG_SELECT_CODE)
-        }
-        //upload a dpr file
-        if (Action.LOAD_ROUTE.toString().equals(action)) {
-            Log.d(TAGDEBUG, "Received intent with $action, loading a route")
-            showFileChooser(DPR_SELECT_CODE)
-        }
-        if (Action.REQUESTED_CUSTOM_CHUNK.toString().equals(action)) {
-            setLoadingStatus()
+            //disseminate file, never tested
+            Action.DISSEMINATE.toString() -> {
+                Log.d(TAGDEBUG, "Received intent with $action, opening the file manager")
+                showFileChooser(JPG_SELECT_CODE)
+            }
+            //upload a dpr file
+            Action.LOAD_ROUTE.toString() -> {
+                Log.d(TAGDEBUG, "Received intent with $action, loading a route")
+                showFileChooser(DPR_SELECT_CODE)
+            }
+            //set loadingStatus after SELECT
+            Action.REQUESTED_CUSTOM_CHUNK.toString() -> {
+                setLoadingStatus()
+            }
         }
     }
 
