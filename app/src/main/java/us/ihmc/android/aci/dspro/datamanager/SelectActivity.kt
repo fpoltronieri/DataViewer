@@ -37,7 +37,6 @@ class SelectActivity : AppCompatActivity() {
 
     }
 
-
     /**
      * get the Current selection of the Crop
      */
@@ -55,14 +54,21 @@ class SelectActivity : AppCompatActivity() {
         val y0 = points[1].toDouble()
         val x1 = points[2].toDouble()
         val y1 = points[3].toDouble()
-        val x3 = points[4].toDouble()
-        val y3 = points[5].toDouble()
-        val x2 = points[6].toDouble()
-        val y2 = points[7].toDouble()
-        val startX : Int = x0.toInt()
-        var startY : Int = y2.toInt()
-        val endX = Math.sqrt( Math.pow(x1 - x0, 2.0) +  Math.pow(y1 - y0, 2.0)).toInt()
-        val endY = Math.sqrt( Math.pow(x3 - x2, 2.0) +  Math.pow(y3 - y2, 2.0)).toInt()
+        val x2 = points[4].toDouble()
+        val y2 = points[5].toDouble()
+        val x3 = points[6].toDouble()
+        val y3 = points[7].toDouble()
+        var startX : Int = x0.toInt()
+        var startY : Int = y0.toInt()
+        var endX : Int = x1.toInt()
+        var endY : Int = y3.toInt()
+        //var endX = Math.sqrt( Math.pow(x1 - x0, 2.0) +  Math.pow(y1 - y0, 2.0)).toInt()
+        //var endY = Math.sqrt( Math.pow(x3 - x0, 2.0) +  Math.pow(y3 - y0, 2.0)).toInt()
+        if (startX > endX)
+            startX = endX.also { endX = startX }
+        if (startY > endY)
+            startY = endY.also { endY = startY }
+
         Log.d(TAGDEBUG, "sx $startX ex $endX sy $startY $endY")
         val bundle = Bundle()
         bundle.putInt(Key.START_X.toString(), startX)
