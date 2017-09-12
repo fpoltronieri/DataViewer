@@ -13,6 +13,7 @@ import android.graphics.drawable.ColorDrawable
 import android.net.Uri
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
+import android.os.Environment
 import android.provider.MediaStore
 import android.support.v4.app.ActivityCompat
 import android.support.v4.content.ContextCompat
@@ -183,7 +184,6 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
 
     }
 
-
     /**
      * Handle the selection of a picture
      * display the image in the Activity
@@ -210,6 +210,28 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
                     onBackPressed()
                 }
             }
+            JPG_SELECT_CODE ->
+                if (resultCode == RESULT_OK) {
+                //send disseminate method to implement
+                onBackPressed()
+            }
+            DPR_SELECT_CODE -> {
+            if (resultCode == RESULT_OK) {
+                val wrongPath = getFilePath(data)
+                val pathParts = wrongPath.split(":")
+                if (pathParts.size != 2) {
+                    Log.e(TAGDEBUG, "Unable to split wrong path: " + wrongPath)
+                    return;
+                }
+
+                val pathSuffix = pathParts[1];
+                val adjustedPath = Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + pathSuffix
+                Log.d(TAGDEBUG, "Submitting adjusted path: " + adjustedPath)
+                sendRegisterPath(adjustedPath);
+                //go back to previous activity
+                onBackPressed()
+            }
+        }
         }
     }
 
@@ -398,6 +420,34 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
             Toast.makeText(applicationContext,
                     "Unable to find viewer to open specified Activity", Toast.LENGTH_LONG).show()
         }
+    }
+
+
+    /**
+     * probably it is never used
+     */
+    private fun sendRegisterPath(filePath: String) {
+        //prepare bundle
+        val intent = Intent()
+        intent.action = Action.REGISTER_PATH.toString()
+        val extra = Bundle()
+        extra.putString(Key.NAME.toString(), filePath)
+        intent.putExtras(extra)
+        Log.d(TAGDEBUG, "Sending " + Action.REGISTER_PATH.toString()
+                + " in broadcast with filename: " + filePath)
+        applicationContext.sendBroadcast(intent)
+    }
+
+    /**
+     * probably it is never used
+     */
+    private fun getFilePath(data: Intent?): String {
+        // Get the Uri of the selected file
+        val uri = data?.data
+        Log.d(TAGDEBUG, "File Uri: " + uri!!.toString())
+        val filePath = uri.path
+        Log.d(TAGDEBUG, "File Path: " + filePath)
+        return filePath
     }
 
 
