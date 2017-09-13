@@ -48,15 +48,11 @@ class SelectActivity : AppCompatActivity() {
             Log.d(TAGDEBUG, "" + p)
             pointString = pointString + p + " "
         }
-        Toast.makeText(this, "Points: " + pointString, Toast.LENGTH_SHORT).show()
-        //TODO simplify this horrible casting
+        Log.d(TAGDEBUG, "Points: $pointString")
+        //Toast.makeText(this, "Points: " + pointString, Toast.LENGTH_SHORT).show()
         val x0 = points[0].toDouble()
         val y0 = points[1].toDouble()
         val x1 = points[2].toDouble()
-        val y1 = points[3].toDouble()
-        val x2 = points[4].toDouble()
-        val y2 = points[5].toDouble()
-        val x3 = points[6].toDouble()
         val y3 = points[7].toDouble()
         var startX : Int = x0.toInt()
         var endX : Int = x1.toInt()
@@ -65,7 +61,7 @@ class SelectActivity : AppCompatActivity() {
         var endY : Int =  Math.max(cropView.height - y0.toInt(), cropView.height - y3.toInt())
         if (startY < 0)
             startY = 0
-        Log.d(TAGDEBUG, "sx $startX ex $endX sy $startY $endY")
+        Log.d(TAGDEBUG, "Cordinates: sx $startX ex $endX sy $startY ey $endY")
         val bundle = Bundle()
         bundle.putInt(Key.START_X.toString(), startX)
         bundle.putInt(Key.END_X.toString(), endX)
