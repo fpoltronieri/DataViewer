@@ -59,16 +59,12 @@ class SelectActivity : AppCompatActivity() {
         val x3 = points[6].toDouble()
         val y3 = points[7].toDouble()
         var startX : Int = x0.toInt()
-        var startY : Int = y0.toInt()
         var endX : Int = x1.toInt()
-        var endY : Int = y3.toInt()
-        //var endX = Math.sqrt( Math.pow(x1 - x0, 2.0) +  Math.pow(y1 - y0, 2.0)).toInt()
-        //var endY = Math.sqrt( Math.pow(x3 - x0, 2.0) +  Math.pow(y3 - y0, 2.0)).toInt()
-        if (startX > endX)
-            startX = endX.also { endX = startX }
-        if (startY > endY)
-            startY = endY.also { endY = startY }
-
+        //The points are inverted so
+        var startY : Int = Math.min(cropView.height - y0.toInt(), cropView.height - y3.toInt())
+        var endY : Int =  Math.max(cropView.height - y0.toInt(), cropView.height - y3.toInt())
+        if (startY < 0)
+            startY = 0
         Log.d(TAGDEBUG, "sx $startX ex $endX sy $startY $endY")
         val bundle = Bundle()
         bundle.putInt(Key.START_X.toString(), startX)

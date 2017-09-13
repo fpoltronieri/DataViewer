@@ -465,7 +465,7 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
                     val fileName = intent?.getStringExtra(Key.NAME.toString())
                     val messageId = intent?.getStringExtra(Key.MESSAGE_ID.toString())
                     val isImage = MIMEUtils.isImage(mimeType)
-                    Log.d(TAGDEBUG, "Received URI: $uri with mimeType: $mimeType")
+                    Log.d(TAGDEBUG, "Received URI: $uri with mimeType: $mimeType filename $fileName")
                     if (isImage && (uri?.path?.equals(mUriImage?.path) == false)) {
                         Log.d(TAGDEBUG, "Data for different pic " + uri?.path + " " + mUriImage?.path)
                         return
@@ -520,8 +520,11 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
             zoomView.setImageDrawable(ColorDrawable(Color.TRANSPARENT))
             //the only way to prevent the Exception is to open the file here
             //and catch the Exception in this method
-            val image = FileInputStream(mUriImage?.path)
-            image.close()
+            //null check, a NPE is thrown elsewhere
+            if (mUriImage?.path != null) {
+                val image = FileInputStream(mUriImage?.path)
+                image.close()
+            }
             zoomView.setImageURI(uri)
             zoomView.visibility = View.VISIBLE
         } catch (e: java.io.FileNotFoundException) {
