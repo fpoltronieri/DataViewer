@@ -204,8 +204,8 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
                 }
             DPR_SELECT_CODE -> {
                 if (resultCode == RESULT_OK) {
-                    val wrongPath = getFilePath(data)
-                    val pathParts = wrongPath.split(":")
+                    val path = getFilePath(data)
+                    /*val pathParts = wrongPath.split(":")
                     if (pathParts.size != 2) {
                         Log.e(TAGDEBUG, "Unable to split wrong path: " + wrongPath)
                         return;
@@ -214,7 +214,8 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
                     val pathSuffix = pathParts[1];
                     val adjustedPath = Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + pathSuffix
                     Log.d(TAGDEBUG, "Submitting adjusted path: " + adjustedPath)
-                    sendRegisterPath(adjustedPath);
+                    sendRegisterPath(adjustedPath)*/
+                    sendRegisterPath(path)
                     //go back to previous activity
                     onBackPressed()
                 }
@@ -512,7 +513,8 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
                 val image = FileInputStream(mUriImage?.path)
                 image.close()
             }
-            switchView()
+            zoomView.visibility = View.VISIBLE
+            metadataView.visibility = View.INVISIBLE
             zoomView.setImageURI(uri)
             //zoomView.visibility = View.VISIBLE
         } catch (e: java.io.FileNotFoundException) {
