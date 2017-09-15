@@ -27,10 +27,8 @@ import android.widget.TextView
 import android.widget.Toast
 import com.github.chrisbanes.photoview.PhotoView
 import us.ihmc.android.aci.dspro.datamanager.util.*
-import us.ihmc.android.aci.dspro.datamanager.R
 import java.io.File
 import java.io.FileInputStream
-import java.io.FileNotFoundException
 import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.*
@@ -170,7 +168,7 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
      * Switch the View between METADATA and IMAGE
      * The boolean logic will be replaced
      */
-    private fun switchToMetada() {
+    private fun switchView() {
         if (metaDataVisibile) {
             metaDataVisibile = false
             metadataView.visibility = View.INVISIBLE
@@ -192,17 +190,6 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
         Log.d(TAGDEBUG, "onActivityResult called!")
         super.onActivityResult(requestCode, resultCode, data)
         when (requestCode) {
-            1 -> {
-                if (data == null) {
-                    Toast.makeText(this, "Error, something went wrong", Toast.LENGTH_SHORT).show()
-                    return
-                }
-                Log.d(TAGDEBUG, "Picture selected: " + data.data.path)
-                Toast.makeText(this, "Picture selected " + data.data.path, Toast.LENGTH_SHORT).show()
-                mUriImage = data.data
-                Log.d(TAGDEBUG, "Uri set for the last image " + mUriImage)
-                setImage(mUriImage)
-            }
             TAKE_PICTURE -> {
                 if (resultCode == Activity.RESULT_OK) {
                     sendAddMessege(mCamUriImage?.path, "image/jpg")
@@ -212,33 +199,33 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
             }
             JPG_SELECT_CODE ->
                 if (resultCode == RESULT_OK) {
-                //send disseminate method to implement
-                onBackPressed()
-            }
-            DPR_SELECT_CODE -> {
-            if (resultCode == RESULT_OK) {
-                val wrongPath = getFilePath(data)
-                val pathParts = wrongPath.split(":")
-                if (pathParts.size != 2) {
-                    Log.e(TAGDEBUG, "Unable to split wrong path: " + wrongPath)
-                    return;
+                    //send disseminate method to implement
+                    onBackPressed()
                 }
+            DPR_SELECT_CODE -> {
+                if (resultCode == RESULT_OK) {
+                    val wrongPath = getFilePath(data)
+                    val pathParts = wrongPath.split(":")
+                    if (pathParts.size != 2) {
+                        Log.e(TAGDEBUG, "Unable to split wrong path: " + wrongPath)
+                        return;
+                    }
 
-                val pathSuffix = pathParts[1];
-                val adjustedPath = Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + pathSuffix
-                Log.d(TAGDEBUG, "Submitting adjusted path: " + adjustedPath)
-                sendRegisterPath(adjustedPath);
-                //go back to previous activity
-                onBackPressed()
+                    val pathSuffix = pathParts[1];
+                    val adjustedPath = Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + pathSuffix
+                    Log.d(TAGDEBUG, "Submitting adjusted path: " + adjustedPath)
+                    sendRegisterPath(adjustedPath);
+                    //go back to previous activity
+                    onBackPressed()
+                }
             }
-        }
         }
     }
 
 
     override fun onLongPress(e: MotionEvent?) {
         Log.d(TAGDEBUG, "onLongPress Recognized")
-        switchToMetada()
+        switchView()
     }
 
     override fun onSingleTapUp(e: MotionEvent?): Boolean {
@@ -268,7 +255,7 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
 
     override fun onSingleTapConfirmed(e: MotionEvent?): Boolean {
         Log.d(TAGDEBUG, "onSingleTap confirmed, calling switchToMetadata() " + e.toString())
-        switchToMetada()
+        switchView()
         return true
     }
 
@@ -525,12 +512,13 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
                 val image = FileInputStream(mUriImage?.path)
                 image.close()
             }
+            switchView()
             zoomView.setImageURI(uri)
-            zoomView.visibility = View.VISIBLE
+            //zoomView.visibility = View.VISIBLE
         } catch (e: java.io.FileNotFoundException) {
             Log.d(TAGDEBUG, "Catched Exception ${e.message} in setImage()")
             metaDataVisibile = false
-            switchToMetada()
+            switchView()
         }
     }
 
@@ -584,22 +572,22 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
                     Log.d(TAGDEBUG, "Discovered first chunk for $mUriImage")
                 }
             }
-            //take a photo using the camera
+        //take a photo using the camera
             Action.ADD_MESSAGE.toString() -> {
                 Log.d(TAGDEBUG, "Received intent with action: $action")
                 takePhoto()
             }
-            //disseminate file, never tested
+        //disseminate file, never tested
             Action.DISSEMINATE.toString() -> {
                 Log.d(TAGDEBUG, "Received intent with $action, opening the file manager")
                 showFileChooser(JPG_SELECT_CODE)
             }
-            //upload a dpr file
+        //upload a dpr file
             Action.LOAD_ROUTE.toString() -> {
                 Log.d(TAGDEBUG, "Received intent with $action, loading a route")
                 showFileChooser(DPR_SELECT_CODE)
             }
-            //set loadingStatus after SELECT
+        //set loadingStatus after SELECT
             Action.REQUESTED_CUSTOM_CHUNK.toString() -> {
                 setLoadingStatus()
             }
