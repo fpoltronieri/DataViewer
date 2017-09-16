@@ -11,9 +11,11 @@ import android.content.res.Configuration
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.net.Uri
+import android.os.AsyncTask
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Environment
+import android.os.Handler
 import android.provider.MediaStore
 import android.support.v4.app.ActivityCompat
 import android.support.v4.content.ContextCompat
@@ -29,6 +31,7 @@ import com.github.chrisbanes.photoview.PhotoView
 import us.ihmc.android.aci.dspro.datamanager.util.*
 import java.io.File
 import java.io.FileInputStream
+import java.io.FileNotFoundException
 import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.*
@@ -147,7 +150,7 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
         super.onRestoreInstanceState(savedInstanceState)
         Log.d(TAGDEBUG, "Called onRestoreInstanceState")
         mUriImage = savedInstanceState?.getParcelable(URIIMAGE)
-        zoomView.setImageURI(mUriImage)
+        setImage(mUriImage)
     }
 
 
@@ -464,7 +467,13 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
                     if (isgetData == true) {
                         Log.d(TAGDEBUG, "Received return from GET_DATA")
                         if (isImage) {
-                            setImage(mUriImage)
+                            //try to sleep before loading the Image
+                            //the plugin is still finalizing the Image?
+                            Handler().postDelayed(
+                                    {
+                                        setImage(mUriImage)
+                                    }
+                            , 200)
                         }
                     } else {
                         Log.d(TAGDEBUG, "Received callback DATA_ARRIVED, requesting DATA")
@@ -516,8 +525,7 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
             zoomView.visibility = View.VISIBLE
             metadataView.visibility = View.INVISIBLE
             zoomView.setImageURI(uri)
-            //zoomView.visibility = View.VISIBLE
-        } catch (e: java.io.FileNotFoundException) {
+        } catch (e: FileNotFoundException) {
             Log.d(TAGDEBUG, "Catched Exception ${e.message} in setImage()")
             metaDataVisibile = false
             switchView()
@@ -611,4 +619,5 @@ class MainActivity : AppCompatActivity(), GestureDetector.OnGestureListener, Ges
         Log.d(TAGDEBUG, "Called function onDestroy()")
         unregisterReceiver(broadcastReceiver)
     }
+
 }
